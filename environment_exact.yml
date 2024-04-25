@@ -1,4 +1,4 @@
-name: radius-valley
+name: improving-exoplanet-radii
 channels:
   - conda-forge
   - defaults
