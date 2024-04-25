@@ -7,5 +7,24 @@ One approach to probing planetary interiors is achieving higher precision of bul
 ## About this model 
 This photodynamical model is a pipeline that uses the `exoplanet`, `lightkurve`, and `PyMC3` packages to fit Kepler systems for the density of the host star, impact parameters, limb-darkening coefficients, and planet-to-star radius ratios all simultaneously. [An earlier iteration of this project](https://github.com/TomWagg/radius-valley) was first initiated by Tom Wagg. Thank you to both my advisor Professor [Eric Agol](https://github.com/ericagol) (University of Washington) for his guidance and to Tom! 
 
+## Installing the model 
+First, use git to clone this repository where you'd like it on your local machine.
+```
+git clone https://github.com/gsuissa/improving-exoplanet-radii.git
+cd improving-exoplanet-radii 
+```
+Then, make sure you have the correct packages installed. Using conda: 
+```
+conda env create --file environment.yml
+```
+It might take a while for conda to solve the environment. The file `environment_exact.yml` is also available for reference. 
+You can enter your new environment with: 
+```
+conda activate improving-exoplanet-radii
+```
+Now you can explore the Jupyter notebooks! `helpers/` contain the helper functions I made to help fit systems. 
+
+
+
 
 
