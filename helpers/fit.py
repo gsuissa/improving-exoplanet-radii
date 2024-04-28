@@ -58,8 +58,8 @@ def optimise_model(lc, initial_guesses, texp=0.5 / 24, u_init=[0.3, 0.2], start=
         model_lightcurve = xo.LimbDarkLightCurve(u[0], u[1])
         
         # stellar density 
-        initial_dens = initial_guesses["st_dens"][0] if initial_guesses["berger_dens"][0] == -1.0\
-            else initial_guesses["berger_dens"][0]
+        initial_dens = initial_guesses["st_dens"][0] #if initial_guesses["berger_dens"][0] == -1.0\
+        #    else initial_guesses["berger_dens"][0]
         
         if log_density == True:
             log_rho_star = pm.Normal("log_rho_star",mu=np.log(initial_dens), sd=1)
