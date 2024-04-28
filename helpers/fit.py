@@ -225,7 +225,7 @@ def sample_posteriors(model, map_soln, tune=1000, draws=1000, cores=1 if platfor
             start=map_soln,
             cores=cores,
             chains=chains,
-            target_accept=0.9,
+            target_accept=0.99,
             return_inferencedata=True,
         )
     return trace
