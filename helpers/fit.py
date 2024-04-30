@@ -195,7 +195,7 @@ def optimise_model(lc, initial_guesses, texp=0.5 / 24, u_init=[0.3, 0.2], start=
     return map_soln, model, mask 
     
 # check the default sampler its using 
-def sample_posteriors(model, map_soln, tune=1500, draws=1000, cores=1 if platform.system() == "Darwin" else 2, chains=2):
+def sample_posteriors(model, map_soln, tune=1500, draws=1000, target_accept=0.99, cores=1 if platform.system() == "Darwin" else 2, chains=2):
     """Sample the posteriors of a given model
 
     Parameters
@@ -225,7 +225,7 @@ def sample_posteriors(model, map_soln, tune=1500, draws=1000, cores=1 if platfor
             start=map_soln,
             cores=cores,
             chains=chains,
-            target_accept=0.99,
+            target_accept=target_accept,
             return_inferencedata=True,
 	    idata_kwargs=dict(log_likelihood=False))
         
