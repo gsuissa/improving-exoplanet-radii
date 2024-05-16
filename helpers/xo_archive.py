@@ -116,11 +116,14 @@ def get_exoplanet_parameters(
             for p in parameters
         ]
 
-        # pass them to helper function and save Berger densities
-        densities = get_berger_density(gaia_ids=gaia_ids)
+        # pass them to helper function 
+        densities, masses = get_berger_density(gaia_ids=gaia_ids)
         for i in range(len(parameters)):
             parameters[i]["berger_dens"] = densities[i]
-            # parameters[i]["pl_tranmid_bkjd"] = Time(parameters[i]["pl_tranmid"],format="jd").bkjd
+            parameters[i]["berger_mass"] = masses[i]
+            
+            # convert transit times to Barycentric Julian dates 
+            parameters[i]["pl_tranmid_bkjd"] = Time(parameters[i]["pl_tranmid"],format="jd").bkjd
         return parameters
 
 
@@ -158,15 +161,17 @@ def get_berger_density(gaia_ids):
                 density = stellar_df[in_stellar_table]["iso_rho"].values.tolist()
                 if len(density) > 1:
                     print('error! gaia id found to have more than one berger density')
-                densities[i] = density[0]
+                    
+                # convert density from solar units to g/cm^3
+                densities[i] = density[0]*1.409
 
                 mass = stellar_df[in_stellar_table]["iso_mass"].values.tolist()
                 if len(mass) > 1:
                     print('error! gaia id found to have more than one berger mass')
                 masses[i] = mass[0]
 
-            # else:
-            #    print('not in table!')
+            else:
+                print('not in table!')
 
             if len(star_id) > 1:
                 print('error! gaia id found to have more than one stellar id ')
