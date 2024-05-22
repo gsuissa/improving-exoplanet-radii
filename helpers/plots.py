@@ -215,20 +215,21 @@ def plot_fittedlightcurves(lc_final, param_lists, map_soln):
 
 def folded_plots(lc_final, param_lists, map_soln):
     detrended_data = lk.LightCurve(time=lc_final['time'], flux=lc_final['flux']-map_soln["gp_pred"])
-
+    gp_model = lk.LightCurve(time=lc_final['time'], flux=map_soln['gp_pred']+map_soln['mean'])
     for n, letter in enumerate(param_lists['pl_letter']):
 
         model = lk.LightCurve(time=lc_final['time'], flux=map_soln["light_curves"][:,n]+map_soln['mean'])
     
         fig, ax = plt.subplots(figsize=(12,4))
-        lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, alpha=1, label='raw data')
-        detrended_data.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, label='data $-$ gp model')
-        model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).plot(ax=ax,color='k',lw=2,label='model')
-        plt.xlim(-0.75,0.75)
-        plt.legend(fontsize=12, loc='lower right')
-        plt.title('planet '+ str(letter))
-        plt.annotate("radius = {0:.4f} R$\oplus$".format(map_soln['r_p'][n]*units.solRad.to(units.earthRad)),
-                     (0, 0),xycoords="axes fraction",xytext=(7,20),textcoords="offset points",va="top",ha="left",fontsize=12)
+        lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, alpha=1, label='raw data',color='cadetblue',s=20)
+        detrended_data.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, label='stellar variability removed', color='orange',s=20)
+        #gp_model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, label='gp model')
+        model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).plot(ax=ax,color='k',lw=2,label='best fit model')
+        plt.xlim(-0.5,0.5)
+        #ax.legend().remove()
+        plt.title('planet '+ str(letter),fontsize=20)
+        plt.annotate("radius = {0:.4f} R$_\oplus$".format(map_soln['r_p'][n]*units.solRad.to(units.earthRad)),(0.78, -0.05),xycoords="axes fraction",xytext=(7,25),textcoords="offset points",va="top",ha="left",fontsize=15)
+        plt.tight_layout()
     
     
 def plot_psd(map_soln):
