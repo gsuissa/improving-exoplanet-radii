@@ -122,8 +122,6 @@ def get_exoplanet_parameters(
             parameters[i]["berger_dens"] = densities[i]
             parameters[i]["berger_mass"] = masses[i]
             
-            # convert transit times to Barycentric Julian dates 
-            parameters[i]["pl_tranmid_bkjd"] = Time(parameters[i]["pl_tranmid"],format="jd").bkjd
         return parameters
 
 
@@ -177,7 +175,7 @@ def get_berger_density(gaia_ids):
                 print('error! gaia id found to have more than one stellar id ')
         else:
             print('no gaia id found!')
-    return densities
+    return densities, masses
 
 
 def transpose_parameters(parameters):
