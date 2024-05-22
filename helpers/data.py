@@ -4,11 +4,34 @@ import exoplanet as xo
 import lightkurve as lk
 
 
-# add docstring to these!! 
-
 def model_data_residuals(param_lists, lc):
+    """
+    Does an initial quality check of the Kepler data to see if the noise is Gaussian. Uses a simplified model of the system 
+    and NASA exoplanet archive values 
+    
+    Parameters
+    ----------
+    param_lists : `dict` 
+        Dictionary of list of parameters for each planet
+    lc : :class:`~lightkurve.Lightcurve` 
+        Stitched light curve of planetary system
+    
+    
+    Returns 
+    -------
+    model : ``
+        Modeled light curve of planetary system using simplified orbits and NASA archive values 
+    difference : ``
+        Residuals between the model and Kepler data 
+    std_calculated : ``
+        Standard deviation of the residuals 
+    mean_tweaked : ``
+        Mean of the residuals 
+    """
+    
     constant = 1
-
+    
+    # model orbit for each of the planets using initial guesses from NASA exoplanet archive 
     orbits = {}
     for i in range(len(param_lists['pl_letter'])):
         orbits[param_lists['pl_letter'][i]] = xo.orbits.SimpleTransitOrbit(period=param_lists["pl_orbper"][i], 
@@ -19,8 +42,9 @@ def model_data_residuals(param_lists, lc):
                                                                            r_star=param_lists['st_rad'][i],
                                                                            ror=param_lists['pl_ratror'][i])
     t = lc.time.value
-    u = [0.3, 0.2]
-
+    u = [0.3, 0.2] # initial limb darkening guesses 
+    
+    # model each light curve using orbit 
     light_curves = {}
     for i in range(len(param_lists['pl_letter'])):
         light_curves[param_lists['pl_letter'][i]] = (xo.LimbDarkLightCurve(*u).get_light_curve(
@@ -28,11 +52,18 @@ def model_data_residuals(param_lists, lc):
                                                     r=param_lists['st_rad'][i]*param_lists['pl_ratror'][i],
                                                     t=t).eval())
         
-    dataset = np.array(lc.flux)
+    # summing up the light curves to get one model light curve     
     model = sum(light_curves.values())
     model = model.flatten()
-    difference = (dataset - model)
     
+    # getting flux from Kepler dataset 
+    dataset = np.array(lc.flux)
+    
+    # finding difference between Kepler data and model 
+    # if these residuals fit a Gaussian, that implies the noise of the Kepler dataset is Gaussian 
+    difference = (dataset - model)
+   
+    # calculate the standard deviation of the difference 
     diff_sorted = np.sort(difference)
     N = len(diff_sorted)
     p = np.arange(N)
@@ -41,6 +72,7 @@ def model_data_residuals(param_lists, lc):
     one_sigma_neg = f((1-0.8413)*N)
     std_calculated = (one_sigma_pos - one_sigma_neg)/2
     
+    # find the mean of the distribution of the difference by isolating +/- 1 sigma of the data 
     mean_tweaked = np.mean(difference[((np.median(difference) - std_calculated) < difference) 
                                       & (difference < (np.median(difference) + std_calculated))])
     
@@ -56,6 +88,8 @@ def remove_outliers(sigma, lc, difference, std_calculated, mean_tweaked):
         
     lc_final = np.ma.filled(lc_clean, fill_value=np.nan).remove_nans()
         
+    lc_final.sort(keys='time')
+    
     return lc_final, flags_sigma
     
     
