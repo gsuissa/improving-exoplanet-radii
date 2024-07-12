@@ -1,4 +1,6 @@
 import numpy as np 
+import arviz as az
+import corner
 import matplotlib.pyplot as plt 
 import exoplanet as xo 
 import lightkurve as lk 
@@ -315,5 +317,13 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     plt.tight_layout()
     plt.show()
     
+def trace_plots(output_folder, system_id, cadence, trace):
+    axes = az.plot_trace(trace, compact=False, var_names=['mean', 't0', 'period', 'rho_star', 'r_star', 'u', 'depth', 'b', 'ror','r_p'])
+    fig = axes.ravel()[0].figure
+    fig.tight_layout()
+    plt.show()
+
+    _ = corner.corner(trace, var_names=['mean', 't0', 'period', 'rho_star', 'r_star', 'u', 'depth', 'b', 'ror','r_p'],show_titles=True, title_fmt='0.4f')
+    plt.show()
 
     
