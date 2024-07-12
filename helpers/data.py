@@ -29,7 +29,7 @@ def model_data_residuals(param_lists, lc):
         Mean of the residuals 
     """
     
-    constant = 1
+    lc.sort(keys='time')
     
     # model orbit for each of the planets using initial guesses from NASA exoplanet archive 
     orbits = {}
