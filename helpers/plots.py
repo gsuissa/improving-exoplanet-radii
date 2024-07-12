@@ -9,8 +9,9 @@ from scipy.stats import norm
 
 # as docstring to all of these 
 
-def diagnostic_plots(lc, lc_final, param_lists, model, difference, std_calculated, mean_tweaked, sigma, flags_nsigma):
+def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model, difference, std_calculated, mean_tweaked, sigma, flags_nsigma):
     
+    # Model/data comparison plot
     p = lc.scatter()
     plt.close()
     fig, ax = plt.subplots(figsize=(12,6))
@@ -19,11 +20,12 @@ def diagnostic_plots(lc, lc_final, param_lists, model, difference, std_calculate
     plt.plot(lc.time.value, model+1,color='orange',lw=3,label='model')
     plt.xlabel(p.get_xlabel())
     plt.ylabel(p.get_ylabel())
-    plt.xlim(600,700)
-    plt.ylim(0.998, 1.001)
+    plt.xlim(min(lc.time.value), min(lc.time.value)+100)
+    plt.ylim(mean_tweaked-(10*std_calculated), mean_tweaked+(10*std_calculated))
     plt.legend(loc='lower left',fontsize=12)
     plt.show()
     
+    # Cumulative distribution function plot
     fig, ax = plt.subplots()
     diff_sorted = np.sort(difference)
     norm_cdf = norm.cdf((diff_sorted - mean_tweaked)/std_calculated)
@@ -31,7 +33,7 @@ def diagnostic_plots(lc, lc_final, param_lists, model, difference, std_calculate
     p = np.arange(N)
     plt.plot(p, diff_sorted,label='residuals cdf')
     plt.plot(norm_cdf*N, diff_sorted, label='gaussian cdf')
-    plt.ylim(0.9995,1.0005)
+    plt.ylim(mean_tweaked-5*std_calculated, mean_tweaked+5*std_calculated)
     plt.axhline(mean_tweaked,color='k')
     plt.axhline(mean_tweaked-std_calculated,color='k')
     plt.axhline(mean_tweaked+std_calculated,color='k')
@@ -40,6 +42,7 @@ def diagnostic_plots(lc, lc_final, param_lists, model, difference, std_calculate
     plt.legend(fontsize=12)
     plt.show()
     
+    # Residuals histogram plot
     fig, ax = plt.subplots()
     h, bins = np.histogram(difference, bins=1000)
     plt.hist(difference, bins=bins, density=True)
@@ -47,38 +50,50 @@ def diagnostic_plots(lc, lc_final, param_lists, model, difference, std_calculate
     plt.axvline(mean_tweaked-(sigma*std_calculated),color='red')
     plt.axvline(mean_tweaked+(sigma*std_calculated),color='red',label="{0} sigma".format(sigma))
     plt.ylim(1e-6,1e4)
-    plt.xlim(0.999,1.001)
+    plt.xlim(mean_tweaked-(10*std_calculated), mean_tweaked+(10*std_calculated))
     plt.yscale('log')
     plt.xlabel("difference")
     plt.ylabel("probability")
     plt.legend(fontsize=12)
     plt.show()
     
+    # Highlighting outliers plot
     fig, ax = plt.subplots()
     plt.scatter(lc.time.value, lc.flux.value,label='difference')
-    plt.scatter(lc.time.value[flags_nsigma], lc.flux.value[flags_nsigma],label='outliers')
+    plt.scatter(lc.time.value[flags_nsigma], lc.flux.value[flags_nsigma],label='{0} sigma outliers'.format(sigma))
     plt.plot(lc.time.value, model+1,color='orange',label='model')
-    plt.ylim(0.997, 1.003)
-    plt.xlim(600,700)
+    plt.ylim(mean_tweaked-(10*std_calculated), mean_tweaked+(10*std_calculated))
+    plt.xlim(min(lc.time.value), min(lc.time.value)+200)
     plt.xlabel("time")
     plt.ylabel("flux")
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=12,loc='lower right')
     plt.show()
     
+    # Outlier distribution plot
     fig, ax = plt.subplots()
     plt.scatter(difference[flags_nsigma],model[flags_nsigma],label='outliers',color='k')
-    #plt.xlim(0.999,1.0005)
     plt.xlabel("difference")
     plt.ylabel("model")
     plt.legend(fontsize=12)
     plt.show()
     
+    # Phase folded light curves plot
     for i in range(len(param_lists['pl_name'])):
         ax = lc_final.fold(period=param_lists["pl_orbper"][i],
                  epoch_time=Time(param_lists["pl_tranmid"][i],
-                                 format="jd").bkjd).scatter(label=param_lists["pl_name"][i], alpha=0.05)
+                                 format="jd").bkjd).scatter(label=param_lists["pl_name"][i], alpha=0.04)
         plt.show()
-        
+    
+    # Transit windows plot 
+    plt.figure(figsize=(10,4))
+    plt.scatter(lc_final.time.value, lc_final.flux.value, label='data')
+    plt.scatter(transit_windows.time.value, transit_windows.flux.value, label='transit windows')
+    plt.scatter(transits.time.value, transits.flux.value, label='transits')
+    plt.plot(lc.time.value, model+1, label='model', color='k')
+    plt.xlim(min(lc_final.time.value), min(lc_final.time.value)+20)
+    plt.legend(fontsize=10,loc='lower left')
+    plt.show()
+            
         
 def periodogram_lomb_scargle(lc_final):
     x = lc_final['time'].value 
@@ -204,9 +219,8 @@ def plot_fittedlightcurves(lc_final, param_lists, map_soln):
     plt.plot(t[~mask], (y-mod)[~mask], "xr", label="outliers")
     ax.axhline(0, color="#aaaaaa", lw=1)
     ax.set_ylabel("residuals [ppt]")
-
-
-    plt.xlim(400,620)
+    
+    plt.xlim(min(t), min(t)+200)
     plt.xlabel("time [days]")
     plt.tight_layout()
 
@@ -253,6 +267,7 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     detrended_flux = y - gp_mod
     difference = detrended_flux - model 
     
+    # Model/data comparison plot
     p = lc_final.scatter()
     plt.close()
     fig, ax = plt.subplots(figsize=(12,6))
@@ -262,11 +277,11 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
         plt.plot(t, map_soln["light_curves"][:, i]+map_soln['mean'], label="planet {0} model".format(l))
     plt.xlabel(p.get_xlabel())
     plt.ylabel(p.get_ylabel())
-    plt.xlim(550,700)
-    #plt.ylim(0.998, 1.001)
+    plt.xlim(min(lc_final.time.value), min(lc_final.time.value)+150)
     plt.legend(loc='lower left', fontsize=12)
     plt.show()
 
+    # Cumulative distribution plot
     diff_sorted = np.sort(difference)
     N = len(diff_sorted)
     p = np.arange(N)
@@ -274,31 +289,29 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     one_sigma_pos = f((0.8413)*N)
     one_sigma_neg = f((1-0.8413)*N)
     std_calculated = (one_sigma_pos - one_sigma_neg)/2
-    
     norm_cdf = norm.cdf((diff_sorted - map_soln['mean'])/std_calculated)
 
     plt.plot(p, diff_sorted,label='residuals cdf')
     plt.plot(norm_cdf*N, diff_sorted, label='gaussian cdf')
-    #plt.ylim(0.9995,1.0005)
+    plt.ylim(map_soln['mean']-5*std_calculated, map_soln['mean']+5*std_calculated)
     plt.xlabel("frequency")
     plt.ylabel("flux")
     plt.legend(fontsize=12)
     plt.show()
     
-    sigma=5
-    
+    # Residuals histogram plot
     fig, ax = plt.subplots(figsize=(7,5))
     h, bins = np.histogram(difference, bins=100)
     plt.hist(difference, bins=bins, density=True)
     plt.plot(bins, norm(map_soln['mean'], std_calculated).pdf(bins), linewidth=2, color='black',label='gaussian')
-    plt.axvline(map_soln['mean']-(sigma*std_calculated),color='red')
-    plt.axvline(map_soln['mean']+(sigma*std_calculated),color='red',label="{0} sigma".format(sigma))
+    plt.axvline(map_soln['mean']-(5*std_calculated),color='red')
+    plt.axvline(map_soln['mean']+(5*std_calculated),color='red',label="5 sigma")
     plt.ylim(1e-6,1e5)
-    #plt.xlim(0.999,1.001)
+    plt.xlim(map_soln['mean']-(10*std_calculated), map_soln['mean']+(10*std_calculated))
     plt.yscale('log')
     plt.xlabel("difference")
     plt.ylabel("probability")
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=12, loc='upper right')
     plt.tight_layout()
     plt.show()
     
