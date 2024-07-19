@@ -90,12 +90,15 @@ def get_exoplanet_parameters(
     # add a custom condition if desired
     if custom_cond is not None:
         default_cond += f" and {custom_cond}"
+        
+    # order planets alphabetically
+    order = 'order+by+pl_name+asc+'
 
     # force the format to be JSON
     fmt = "&format=JSON"
 
     # combine into URL and perform the request
-    url = BASE_URL + ','.join(columns) + from_table + name_cond + default_cond + fmt
+    url = BASE_URL + ','.join(columns) + from_table + name_cond + default_cond + order + fmt
 
     r = request(method="GET", url=url)
 
