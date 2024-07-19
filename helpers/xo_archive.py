@@ -10,7 +10,7 @@ BASE_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+"
 def get_exoplanet_parameters(
     search_name,
     which="default",
-    custom_cond=None,
+    custom_cond="tran_flag=1",
     columns=[
         "pl_name",
         "pl_letter",
