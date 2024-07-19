@@ -318,6 +318,7 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     plt.show()
     
 def trace_plots(output_folder, system_id, cadence, trace):
+    az.rcParams["plot.max_subplots"] = 200
     axes = az.plot_trace(trace, compact=False, var_names=['mean', 't0', 'period', 'rho_star', 'r_star', 'u', 'depth', 'b', 'ror','r_p'])
     fig = axes.ravel()[0].figure
     fig.tight_layout()
