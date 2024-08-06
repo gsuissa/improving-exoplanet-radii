@@ -212,7 +212,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
             r_star = pm.Deterministic("r_star", (((mass_star/rho_star)/((4/3)*np.pi))**(1/3)) * ((units.solMass / (units.g/units.cm**3))**(1/3)).to(units.solRad))
         
         else: 
-            r_star = pm.Normal("r_star", mu=initial_guesses["st_rad"][0], sd=10.0)
+            r_star = pm.Normal("r_star", mu=initial_guesses["st_rad"][0], sd=0.1)
             
         if include_depth == True:
             
