@@ -81,9 +81,15 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     
     # Phase folded light curves plot
     for i in range(len(param_lists['pl_name'])):
+        if lc.time.format == 'bkjd':
+            epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").bkjd
+        elif lc.time.format == 'btjd':
+            epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").btjd
+        else: 
+            epoch_time = None
+            print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
         ax = lc_final.fold(period=param_lists["pl_orbper"][i],
-                 epoch_time=Time(param_lists["pl_tranmid"][i],
-                                 format="jd").bkjd).scatter(label=param_lists["pl_name"][i], alpha=0.04)
+                           epoch_time=epoch_time).scatter(label=param_lists["pl_name"][i], alpha=0.04)
         plt.show()
     
     # Transit windows plot 
@@ -112,6 +118,7 @@ def periodogram_lomb_scargle(lc_final):
     plt.xlabel("period [days]")
     _ = plt.ylabel("power")
     plt.show()
+    return peak
     
 
 def periodogram_boxleastsquares(lc_final, lower_period, upper_period):
