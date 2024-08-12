@@ -18,6 +18,7 @@ def gp(lc, param_lists, complicated_gp=False):
 
         # Gaussian process 
         if complicated_gp == True: 
+            peak = plots.periodogram_lomb_scargle(lc)
             log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(lc['flux_err'])), sd=1)
             sigma_rot = pm.InverseGamma("sigma_rot", **pmx.estimate_inverse_gamma_parameters(1, 5))
             log_prot = pm.Normal("log_prot", mu=np.log(peak['period']), sd=0.02)
@@ -156,7 +157,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
     initial_guesses : `dict`
         Dictionary of initial guesses
     texp : `float`, optional
-        Exposure time, by default 0.5/24
+        Exposure time in units of days
     u_init : `list`, optional
         Initial limb darkening guesses, by default [0.3, 0.2]
 
@@ -168,7 +169,15 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
         Dictionary of optimised parameters
     """
     n_planets = len(initial_guesses["pl_orbper"])
-    t0s_bkjd = Time(initial_guesses["pl_tranmid"], format="jd").bkjd
+    
+    if lc.time.format == 'bkjd':
+        t0s_bjd = Time(initial_guesses["pl_tranmid"], format="jd").bkjd
+    elif lc.time.format == 'btjd':
+        t0s_bjd = Time(initial_guesses["pl_tranmid"], format="jd").btjd
+    else: 
+        t0s_bjd = None
+        print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
+    
     mass_star = np.array(initial_guesses['st_mass'])
     depths = np.array(initial_guesses['pl_trandep'])/100
 
@@ -178,7 +187,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
         mean = pm.Normal("mean", mu=1.0, sd=1.0) 
 
         # The time of a reference transit for each planet
-        t0 = pm.Normal("t0", mu=t0s_bkjd, sd=1.0, shape=n_planets)
+        t0 = pm.Normal("t0", mu=t0s_bjd, sd=1.0, shape=n_planets)
 
         # The log period; also tracking the period itself
         logP = pm.Normal("logP", mu=np.log(initial_guesses["pl_orbper"]), sd=0.1, shape=n_planets)
@@ -202,7 +211,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
             system_vars = [log_rho_star]
             
         else: 
-            rho_star = pm.Normal("rho_star",mu=initial_dens, sd=1)
+            rho_star = pm.Normal("rho_star", mu=initial_dens, sd=1)
             xo.units.with_unit(rho_star, (units.g/(units.cm**3)))
             
             system_vars = [rho_star]
