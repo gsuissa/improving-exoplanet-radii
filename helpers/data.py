@@ -34,9 +34,17 @@ def model_data_residuals(param_lists, lc):
     # model orbit for each of the planets using initial guesses from NASA exoplanet archive 
     orbits = {}
     for i in range(len(param_lists['pl_letter'])):
+        
+        if lc.time.format == 'bkjd':
+            t0 = Time(param_lists["pl_tranmid"][i],format="jd").bkjd 
+        elif lc.time.format == 'btjd':
+            t0 = Time(param_lists["pl_tranmid"][i],format="jd").btjd 
+        else: 
+            t0 = None
+            print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
+            
         orbits[param_lists['pl_letter'][i]] = xo.orbits.SimpleTransitOrbit(period=param_lists["pl_orbper"][i], 
-                                                                           t0=(Time(param_lists["pl_tranmid"] [i],
-                                                                                    format="jd").bkjd),                           
+                                                                           t0=t0,                           
                                                                            b=param_lists['pl_imppar'][i], 
                                                                            duration=param_lists['pl_trandur'][i]/24,
                                                                            r_star=param_lists['st_rad'][i],
