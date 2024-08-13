@@ -46,7 +46,13 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     
     # Residuals histogram plot
     fig, ax = plt.subplots()
-    h, bins = np.histogram(difference, bins=1000)
+    if np.log10(len(lc.time)) >= 6: 
+        bins_number = 20000
+    elif 4 < np.log10(len(lc.time)) < 6: 
+        bins_number = 10000
+    else:
+        bins_number = 1000
+    h, bins = np.histogram(difference, bins=bins_number)
     plt.hist(difference, bins=bins, density=True)
     plt.plot(bins, norm(mean_tweaked, std_calculated).pdf(bins), linewidth=2, color='black',label='gaussian')
     plt.axvline(mean_tweaked-(sigma*std_calculated),color='red')
@@ -56,7 +62,7 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     plt.yscale('log')
     plt.xlabel("difference")
     plt.ylabel("probability")
-    plt.legend(fontsize=12)
+    plt.legend(fontsize=12,loc='lower right')
     plt.show()
     
     # Highlighting outliers plot
