@@ -178,7 +178,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
         t0s_bjd = None
         print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
     
-    mass_star = np.array(initial_guesses['st_mass'])
+    mass_star = np.array(initial_guesses['berger_mass'])
     depths = np.array(initial_guesses['pl_trandep'])/100
 
     with pm.Model() as model:
