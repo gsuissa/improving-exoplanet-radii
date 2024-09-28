@@ -13,6 +13,8 @@ from scipy.stats import norm
 
 def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model, difference, std_calculated, mean_tweaked, sigma, flags_nsigma):
     
+    system_name = param_lists['pl_name'][0][0:-2]
+    
     # Model/data comparison plot
     p = lc.scatter()
     plt.close()
@@ -29,52 +31,51 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     
     # Cumulative distribution function plot
     fig, ax = plt.subplots()
-    diff_sorted = np.sort(difference)
-    norm_cdf = norm.cdf((diff_sorted - mean_tweaked)/std_calculated)
+    diff_sorted = np.sort(1-difference)
+    norm_cdf = norm.cdf((diff_sorted - (1 - mean_tweaked))/std_calculated)
     N = len(diff_sorted)
     p = np.arange(N)
-    plt.plot(p, diff_sorted,label='residuals cdf')
-    plt.plot(norm_cdf*N, diff_sorted, label='gaussian cdf')
-    plt.ylim(mean_tweaked-5*std_calculated, mean_tweaked+5*std_calculated)
-    plt.axhline(mean_tweaked,color='k')
-    plt.axhline(mean_tweaked-std_calculated,color='k')
-    plt.axhline(mean_tweaked+std_calculated,color='k')
-    plt.xlabel("frequency")
-    plt.ylabel("flux")
+    plt.plot(p, diff_sorted,label='residuals',color='deeppink',zorder=1)
+    plt.plot(norm_cdf*N, diff_sorted, label='gaussian',color='k',zorder=0)
+    plt.ylim(1-mean_tweaked-5*std_calculated, 1-mean_tweaked+5*std_calculated)
+    plt.axhline(1-mean_tweaked-std_calculated,color='k',ls='dashed')
+    plt.axhline(1-mean_tweaked+std_calculated,color='k',ls='dashed')
+    plt.xlabel("Frequency")
+    plt.ylabel("Flux")
     plt.legend(fontsize=12)
-    plt.show()
+    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/cdf.png', dpi=300, bbox_inches="tight")
     
     # Residuals histogram plot
     fig, ax = plt.subplots()
     if np.log10(len(lc.time)) >= 6: 
         bins_number = 20000
-    elif 4 < np.log10(len(lc.time)) < 6: 
+    elif 5 < np.log10(len(lc.time)) < 6: 
         bins_number = 10000
     else:
         bins_number = 1000
-    h, bins = np.histogram(difference, bins=bins_number)
-    plt.hist(difference, bins=bins, density=True)
-    plt.plot(bins, norm(mean_tweaked, std_calculated).pdf(bins), linewidth=2, color='black',label='gaussian')
-    plt.axvline(mean_tweaked-(sigma*std_calculated),color='red')
-    plt.axvline(mean_tweaked+(sigma*std_calculated),color='red',label="{0} sigma".format(sigma))
+    h, bins = np.histogram(1-difference, bins=bins_number)
+    plt.hist(1-difference, bins=bins, density=True, color='cornflowerblue')
+    plt.plot(bins, norm(1-mean_tweaked, std_calculated).pdf(bins), linewidth=2, color='black',label='gaussian')
+    plt.axvline(1-mean_tweaked-(sigma*std_calculated),ls='dashed',color='k')
+    plt.axvline(1-mean_tweaked+(sigma*std_calculated),ls='dashed',color='k',label="{0}-sigma".format(sigma))
     plt.ylim(1e-6,1e4)
-    plt.xlim(mean_tweaked-(10*std_calculated), mean_tweaked+(10*std_calculated))
+    plt.xlim(1-mean_tweaked-(10*std_calculated), 1-mean_tweaked+(10*std_calculated))
     plt.yscale('log')
-    plt.xlabel("difference")
-    plt.ylabel("probability")
-    plt.legend(fontsize=12,loc='lower right')
-    plt.show()
+    plt.xlabel("Residuals")
+    plt.ylabel("Probability")
+    plt.legend(fontsize=12,loc='upper right')
+    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/hist.png', dpi=300, bbox_inches="tight")
     
     # Highlighting outliers plot
-    fig, ax = plt.subplots()
-    plt.scatter(lc.time.value, lc.flux.value,label='difference')
-    plt.scatter(lc.time.value[flags_nsigma], lc.flux.value[flags_nsigma],label='{0} sigma outliers'.format(sigma))
-    plt.plot(lc.time.value, model+1,color='orange',label='model')
+    fig, ax = plt.subplots(figsize=(10,4))
+    plt.scatter(lc.time.value, lc.flux.value,color='k',label='data',s=0.5,alpha=0.5)
+    plt.plot(lc.time.value, model+1,color='deeppink',label='model')
+    plt.scatter(lc.time.value[flags_nsigma], lc.flux.value[flags_nsigma],label='{0}-sigma outliers'.format(sigma),color='blue')
     plt.ylim(mean_tweaked-(10*std_calculated), mean_tweaked+(10*std_calculated))
     plt.xlim(min(lc.time.value), min(lc.time.value)+200)
-    plt.xlabel("time")
-    plt.ylabel("flux")
-    plt.legend(fontsize=12,loc='lower right')
+    plt.xlabel("Time [BKJD]")
+    plt.ylabel("Normalized flux")
+    plt.legend(fontsize=10,loc='lower right')
     plt.show()
     
     # Outlier distribution plot
@@ -86,17 +87,21 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     plt.show()
     
     # Phase folded light curves plot
-    for i in range(len(param_lists['pl_name'])):
-        if lc.time.format == 'bkjd':
-            epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").bkjd
-        elif lc.time.format == 'btjd':
-            epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").btjd
-        else: 
-            epoch_time = None
-            print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
-        ax = lc_final.fold(period=param_lists["pl_orbper"][i],
-                           epoch_time=epoch_time).scatter(label=param_lists["pl_name"][i], alpha=0.04)
-        plt.show()
+    fig, ax = plt.subplots(len(param_lists['pl_letter']), figsize=(12,20))
+    with plt.style.context(lk.MPLSTYLE):
+        for i in range(len(param_lists['pl_name'])):
+            if lc.time.format == 'bkjd':
+                epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").bkjd
+            elif lc.time.format == 'btjd':
+                epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").btjd
+            else: 
+                epoch_time = None
+                print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
+            ax[i] = lc_final.fold(period=param_lists["pl_orbper"][i],
+                               epoch_time=epoch_time).scatter(ax=ax[i], label=param_lists["pl_name"][i], alpha=0.04, color='k')
+            ax[i].legend(loc='lower right')
+        plt.tight_layout()
+        plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/folded.png', dpi=300, bbox_inches="tight")
     
     # Transit windows plot 
     plt.figure(figsize=(10,4))
@@ -202,63 +207,71 @@ def periodogram_boxleastsquares(lc_final, lower_period, upper_period):
     plt.show() 
 
 
-def plot_fittedlightcurves(lc_final, param_lists, map_soln):
-
-    t = lc_final["time"].value
-    y = lc_final["flux"].value
+def plot_fittedlightcurves(transit_windows, notransits, param_lists, map_soln):
+    system_name = param_lists['pl_name'][0][0:-2]
+    
+    t = transit_windows["time"].value
+    y = transit_windows["flux"].value
     gp_mod = map_soln["gp_pred"] + map_soln["mean"]
 
     fig, axes = plt.subplots(3, 1, figsize=(10, 7), sharex=True)
     
     # plotting gp_model against data 
     ax = axes[0]
-    ax.plot(t, y, "k", label="data")
-    ax.plot(t, gp_mod, color="C2", label="gp model")
-    ax.legend(fontsize=10)
-    ax.set_ylabel("relative flux")
+    ax.scatter(transit_windows["time"].value, transit_windows["flux"].value, color="k", label="data (transits removed)", s=2)
+    ax.plot(t, gp_mod, color="green", label="GP model",lw=2.5)
+    ax.legend(fontsize=8, loc=3, bbox_to_anchor=(1, 0.4))
+    ax.set_ylabel("normalized flux")
+    ax.yaxis.set_label_coords(-0.15, 0.5)
 
     # plotting de-trended data 
     ax = axes[1]
-    ax.plot(t, y - gp_mod, "k", label="de-trended data")
+    ax.scatter(t, y - gp_mod, color="k", label="de-trended data", s=2)
     for i, l in enumerate(param_lists['pl_letter']):
-        ax.plot(t, map_soln["light_curves"][:, i], label="planet {0}".format(l))
-    ax.legend(fontsize=10, loc=3)
-    ax.set_ylabel("de-trended flux [ppt]")
+        ax.plot(t, map_soln["light_curves"][:, i], label="planet {0}".format(l), lw=2)
+    ax.legend(fontsize=8, loc=3, bbox_to_anchor=(1, 0.2))
+    ax.set_ylabel("de-trended flux")
     
     # plotting residuals 
     ax = axes[2]
     mod = gp_mod + np.sum(map_soln["light_curves"], axis=-1)
     rms = np.sqrt(np.median((y-mod)**2))
     mask = np.abs(y-mod) < 7 * rms
-    ax.plot(t, y - mod, "k")
-    plt.plot(t[~mask], (y-mod)[~mask], "xr", label="outliers")
+    ax.scatter(t, y - mod, color="k", label='residuals', s=2, zorder=2)
+    plt.plot(t[~mask], (y-mod)[~mask], "xr", label="outliers",zorder=1)
     ax.axhline(0, color="#aaaaaa", lw=1)
-    ax.set_ylabel("residuals [ppt]")
+    ax.legend(fontsize=8, loc=3, bbox_to_anchor=(1, 0.4))
+    ax.set_ylabel("residuals")
     
     plt.xlim(min(t), min(t)+200)
-    plt.xlabel("time [days]")
+    plt.xlabel("time [BKJD]")
     plt.tight_layout()
+    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_fitted.png', dpi=300, bbox_inches="tight")
 
     return fig, mask 
 
 
 def folded_plots(lc_final, param_lists, map_soln):
+    system_name = param_lists['pl_name'][0][0:-2]
+    
     detrended_data = lk.LightCurve(time=lc_final['time'], flux=lc_final['flux']-map_soln["gp_pred"])
     gp_model = lk.LightCurve(time=lc_final['time'], flux=map_soln['gp_pred']+map_soln['mean'])
-    for n, letter in enumerate(param_lists['pl_letter']):
-
-        model = lk.LightCurve(time=lc_final['time'], flux=map_soln["light_curves"][:,n]+map_soln['mean'])
     
-        fig, ax = plt.subplots(figsize=(12,4))
-        lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, alpha=1, label='raw data',color='cadetblue',s=20)
-        detrended_data.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, label='stellar variability removed', color='orange',s=20)
-        #gp_model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax, label='gp model')
-        model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).plot(ax=ax,color='k',lw=2,label='best fit model')
-        plt.xlim(-0.5,0.5)
-        #ax.legend().remove()
-        plt.title('planet '+ str(letter),fontsize=20)
-        plt.annotate("radius = {0:.4f} R$_\oplus$".format(map_soln['r_p'][n]*units.solRad.to(units.earthRad)),(0.78, -0.05),xycoords="axes fraction",xytext=(7,25),textcoords="offset points",va="top",ha="left",fontsize=15)
-        plt.tight_layout()
+    fig, ax = plt.subplots(len(param_lists['pl_letter']), figsize=(12,20))
+    with plt.style.context(lk.MPLSTYLE):
+        for n, letter in enumerate(param_lists['pl_letter']):
+
+            model = lk.LightCurve(time=lc_final['time'], flux=map_soln["light_curves"][:,n]+map_soln['mean'])
+            lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax[n], alpha=1, label='data',color='steelblue',s=20)
+            detrended_data.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax[n], label='stellar variability removed', color='palevioletred',s=20)
+            model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).plot(ax=ax[n],color='k',lw=2,label='model')
+            ax[n].set_xlim(-0.5,0.5)
+            ax[n].legend(loc='lower right',fontsize=12)
+            ax[n].set_title('planet '+ str(letter),fontsize=20)
+        
+        plt.tight_layout()  
+        plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_folded.png', dpi=300, bbox_inches="tight")
+        
     
     
 def plot_psd(map_soln):
@@ -275,6 +288,8 @@ def plot_psd(map_soln):
 
 
 def diagnostic_plots_refined(lc_final, param_lists, map_soln):
+    system_name = param_lists['pl_name'][0][0:-2]
+    
     t = lc_final["time"].value
     y = lc_final["flux"].value
     gp_mod = map_soln["gp_pred"]
@@ -305,30 +320,30 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     one_sigma_neg = f((1-0.8413)*N)
     std_calculated = (one_sigma_pos - one_sigma_neg)/2
     norm_cdf = norm.cdf((diff_sorted - map_soln['mean'])/std_calculated)
-
-    plt.plot(p, diff_sorted,label='residuals cdf')
-    plt.plot(norm_cdf*N, diff_sorted, label='gaussian cdf')
+    
+    plt.plot(p, diff_sorted,label='residuals',color='deeppink',zorder=1)
+    plt.plot(norm_cdf*N, diff_sorted, label='gaussian',color='k',zorder=0)
     plt.ylim(map_soln['mean']-5*std_calculated, map_soln['mean']+5*std_calculated)
-    plt.xlabel("frequency")
-    plt.ylabel("flux")
+    plt.xlabel("Frequency")
+    plt.ylabel("Flux")
     plt.legend(fontsize=12)
-    plt.show()
+    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/cdf.png', dpi=300, bbox_inches="tight")
     
     # Residuals histogram plot
     fig, ax = plt.subplots(figsize=(7,5))
     h, bins = np.histogram(difference, bins=100)
-    plt.hist(difference, bins=bins, density=True)
+    plt.hist(difference, bins=bins, density=True,color='cornflowerblue')
     plt.plot(bins, norm(map_soln['mean'], std_calculated).pdf(bins), linewidth=2, color='black',label='gaussian')
-    plt.axvline(map_soln['mean']-(5*std_calculated),color='red')
-    plt.axvline(map_soln['mean']+(5*std_calculated),color='red',label="5 sigma")
+    plt.axvline(map_soln['mean']-(5*std_calculated),color='k', ls='dashed')
+    plt.axvline(map_soln['mean']+(5*std_calculated),ls='dashed',color='k',label="5-sigma")
     plt.ylim(1e-6,1e5)
     plt.xlim(map_soln['mean']-(10*std_calculated), map_soln['mean']+(10*std_calculated))
     plt.yscale('log')
-    plt.xlabel("difference")
-    plt.ylabel("probability")
+    plt.xlabel("Residuals")
+    plt.ylabel("Probability")
     plt.legend(fontsize=12, loc='upper right')
     plt.tight_layout()
-    plt.show()
+    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/hist.png', dpi=300, bbox_inches="tight")
     
 def trace_plots(output_folder, system_id, cadence, trace):
     az.rcParams["plot.max_subplots"] = 200
