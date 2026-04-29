@@ -147,7 +147,7 @@ def create_transit_windows(lc, period, transit_time, duration):
         return in_transit
 
 
-def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3, 0.2], start=None, use_mass=False, log_density=True, include_depth=True, log_depth=True, complicated_gp=False):
+def optimise_model(lc, notransits, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3, 0.2], start=None, use_mass=False, log_density=True, include_depth=True, log_depth=True, complicated_gp=False):
     """Optimise a transit model to fit some data
 
     Parameters
@@ -178,7 +178,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
         t0s_bjd = None
         print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
     
-    mass_star = np.array(initial_guesses['berger_mass'])
+    mass_star = np.array(initial_guesses['berger_mass'])[0]
     depths = np.array(initial_guesses['pl_trandep'])/100
 
     with pm.Model() as model:
@@ -320,7 +320,7 @@ def optimise_model(lc, initial_guesses, gp_map_soln, texp=0.5 / 24, u_init=[0.3,
         map_soln = map_soln = pmx.optimize(start=map_soln, vars=[r_p])
         map_soln = pmx.optimize(start=map_soln)
     
-    _, mask = plots.plot_fittedlightcurves(lc, initial_guesses, map_soln)
+    _, mask = plots.plot_fittedlightcurves(lc, notransits, initial_guesses, map_soln)
     plots.folded_plots(lc, initial_guesses, map_soln)
     
     return map_soln, model, mask 
