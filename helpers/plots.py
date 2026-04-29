@@ -43,7 +43,7 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     plt.xlabel("Frequency")
     plt.ylabel("Flux")
     plt.legend(fontsize=12)
-    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/cdf.png', dpi=300, bbox_inches="tight")
+    #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/cdf.png', dpi=300, bbox_inches="tight")
     
     # Residuals histogram plot
     fig, ax = plt.subplots()
@@ -64,7 +64,7 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     plt.xlabel("Residuals")
     plt.ylabel("Probability")
     plt.legend(fontsize=12,loc='upper right')
-    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/hist.png', dpi=300, bbox_inches="tight")
+    #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/hist.png', dpi=300, bbox_inches="tight")
     
     # Highlighting outliers plot
     fig, ax = plt.subplots(figsize=(10,4))
@@ -89,7 +89,7 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
     # Phase folded light curves plot
     fig, ax = plt.subplots(len(param_lists['pl_letter']), figsize=(12,20))
     with plt.style.context(lk.MPLSTYLE):
-        for i in range(len(param_lists['pl_name'])):
+        for i, letter in enumerate(param_lists['pl_letter']):
             if lc.time.format == 'bkjd':
                 epoch_time = Time(param_lists["pl_tranmid"][i],format="jd").bkjd
             elif lc.time.format == 'btjd':
@@ -99,9 +99,11 @@ def diagnostic_plots(lc, lc_final, transits, transit_windows, param_lists, model
                 print('error. could not identify time system used for light curve (e.g., BKJD or BTJD)')
             ax[i] = lc_final.fold(period=param_lists["pl_orbper"][i],
                                epoch_time=epoch_time).scatter(ax=ax[i], label=param_lists["pl_name"][i], alpha=0.04, color='k')
-            ax[i].legend(loc='lower right')
+            ax[i].get_legend().remove()
+            ax[i].set_xlabel('Time since transit (days)')
+            ax[i].set_title('Planet '+ str(letter),fontsize=20)
         plt.tight_layout()
-        plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/folded.png', dpi=300, bbox_inches="tight")
+        #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots/folded.png', dpi=300, bbox_inches="tight")
     
     # Transit windows plot 
     plt.figure(figsize=(10,4))
@@ -207,7 +209,7 @@ def periodogram_boxleastsquares(lc_final, lower_period, upper_period):
     plt.show() 
 
 
-def plot_fittedlightcurves(transit_windows, notransits, param_lists, map_soln):
+def plot_fittedlightcurves(transit_windows, param_lists, map_soln):
     system_name = param_lists['pl_name'][0][0:-2]
     
     t = transit_windows["time"].value
@@ -246,7 +248,7 @@ def plot_fittedlightcurves(transit_windows, notransits, param_lists, map_soln):
     plt.xlim(min(t), min(t)+200)
     plt.xlabel("time [BKJD]")
     plt.tight_layout()
-    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_fitted.png', dpi=300, bbox_inches="tight")
+    #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_fitted.png', dpi=300, bbox_inches="tight")
 
     return fig, mask 
 
@@ -262,23 +264,24 @@ def folded_plots(lc_final, param_lists, map_soln):
         for n, letter in enumerate(param_lists['pl_letter']):
 
             model = lk.LightCurve(time=lc_final['time'], flux=map_soln["light_curves"][:,n]+map_soln['mean'])
-            lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax[n], alpha=1, label='data',color='steelblue',s=20)
+            #lc_final.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax[n], alpha=1, label='data',color='steelblue',s=20)
             detrended_data.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).scatter(ax=ax[n], label='stellar variability removed', color='palevioletred',s=20)
             model.fold(period=map_soln['period'][n], epoch_time=map_soln['t0'][n]).plot(ax=ax[n],color='k',lw=2,label='model')
             ax[n].set_xlim(-0.5,0.5)
             ax[n].legend(loc='lower right',fontsize=12)
-            ax[n].set_title('planet '+ str(letter),fontsize=20)
-        
+            ax[n].set_title('Planet '+ str(letter),fontsize=20)
+            ax[n].set_xlabel('Time since transit (days)')
+            ax[n].set_ylabel('Normalized flux')
         plt.tight_layout()  
-        plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_folded.png', dpi=300, bbox_inches="tight")
+        #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/model_plots/detrended_folded.png', dpi=300, bbox_inches="tight")
         
     
     
 def plot_psd(map_soln):
     fig, ax = plt.subplots()
     plt.title("initial psd")
-    plt.text(.02, .01, 'Q={0}'.format(
-        np.round(np.exp(map_soln['log_Q0']),decimals=2)), ha='left', va='bottom', transform=ax.transAxes)
+    #plt.text(.02, .01, 'Q={0}'.format(
+    #    np.round(np.exp(map_soln['log_Q']),decimals=2)), ha='left', va='bottom', transform=ax.transAxes)
     freq = np.linspace(0.01,10,5000)
     plt.loglog(freq, map_soln['psd'], ":k", label="full model")
     plt.xlim(freq.min(), freq.max())
@@ -327,7 +330,7 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     plt.xlabel("Frequency")
     plt.ylabel("Flux")
     plt.legend(fontsize=12)
-    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/cdf.png', dpi=300, bbox_inches="tight")
+    #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/cdf.png', dpi=300, bbox_inches="tight")
     
     # Residuals histogram plot
     fig, ax = plt.subplots(figsize=(7,5))
@@ -343,7 +346,7 @@ def diagnostic_plots_refined(lc_final, param_lists, map_soln):
     plt.ylabel("Probability")
     plt.legend(fontsize=12, loc='upper right')
     plt.tight_layout()
-    plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/hist.png', dpi=300, bbox_inches="tight")
+    #plt.savefig('output/'+system_name+'/long/'+system_name+'_plots/diagnostic_plots_refined/hist.png', dpi=300, bbox_inches="tight")
     
 def trace_plots(output_folder, system_id, cadence, trace):
     az.rcParams["plot.max_subplots"] = 200
