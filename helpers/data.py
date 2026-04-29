@@ -1,7 +1,6 @@
 import numpy as np
 from astropy.time import Time
 import exoplanet as xo 
-import lightkurve as lk
 
 
 def model_data_residuals(param_lists, lc):
