@@ -2,7 +2,6 @@ from requests import request
 from collections import defaultdict
 import pandas as pd
 import numpy as np
-from astropy.time import Time
 
 BASE_URL = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+"
 
@@ -15,6 +14,7 @@ def get_exoplanet_parameters(
         "pl_name",
         "pl_letter",
         "pl_orbper",
+        "pl_orbsmax",
         "pl_orbincl",
         "pl_orbeccen",
         "pl_trandep",
@@ -25,8 +25,10 @@ def get_exoplanet_parameters(
         "st_rad",
         "st_mass",
         "st_dens",
-        "gaia_id",
+        "gaia_dr3_id",
         "pl_rade",
+        "pl_radeerr1",
+        "pl_radeerr2"
     ],
 ):
     """Get parameters for exoplanets from the Exoplanet Archive using their TAP service
@@ -115,7 +117,7 @@ def get_exoplanet_parameters(
 
         # convert gaia id strings to ints
         gaia_ids = [
-            int(p["gaia_id"].split(" ")[-1]) if p["gaia_id"] is not None else np.nan
+            int(p["gaia_dr3_id"].split(" ")[-1]) if p["gaia_dr3_id"] is not None else np.nan
             for p in parameters
         ]
 
