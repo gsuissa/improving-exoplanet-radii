@@ -292,7 +292,7 @@ def plot_psd(map_soln):
     plt.show()
 
 
-def plot_acf(notransits, gp_map_soln):
+def acf_plot(notransits, gp_map_soln):
     lags = 500
 
     # SHO term 1 (Q > 1/2)
