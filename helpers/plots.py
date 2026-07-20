@@ -8,6 +8,8 @@ import astropy.units as units
 from astropy.time import Time 
 from astropy.timeseries import BoxLeastSquares
 from scipy.stats import norm 
+from statsmodels.graphics.tsaplots import plot_acf
+
 
 # as docstring to all of these 
 
@@ -288,6 +290,45 @@ def plot_psd(map_soln):
     plt.xlabel("frequency [1 / day]")
     plt.ylabel("power [day flux$^2$]")
     plt.show()
+
+
+def plot_acf(notransits, gp_map_soln):
+    lags = 500
+
+    # SHO term 1 (Q > 1/2)
+
+    jitter = np.exp(gp_map_soln['log_jitter'])
+    sigma = np.exp(gp_map_soln['log_sigma_1'])
+    rho = np.exp(gp_map_soln['log_rho_1']) 
+    Q = np.exp(gp_map_soln['log_Q_1']) 
+    cadence_offset = np.linspace(0, lags-1, lags)
+    tau = cadence_offset*0.0204166667
+    w0 = 2*np.pi / rho 
+    eta = np.sqrt(np.abs(1 - (1/(4*Q**2))))
+
+    jitter_contribution = jitter**2 + np.mean(notransits['flux_err'])**2
+    sho_kernel_1 = sigma**2 / (sigma**2 + jitter_contribution) * np.exp(-w0 * tau / (2*Q)) * (np.cos(eta * w0 * tau) + 1/(2*eta*Q)*np.sin(eta * w0 * tau))
+
+    # SHO term 1 (Q < 1/2)
+
+    sigma = np.exp(gp_map_soln['log_sigma_2'])
+    rho = np.exp(gp_map_soln['log_rho_2']) 
+    Q = np.exp(gp_map_soln['log_Q_2'])
+    w0 = 2*np.pi / rho 
+    eta = np.sqrt(np.abs(1 - (1/(4*Q**2))))
+
+    sho_kernel_2 = sigma**2 / (sigma**2 + jitter_contribution) * np.exp(-w0 * tau / (2*Q)) * (np.cosh(eta * w0 * tau) + 1/(2*eta*Q)*np.sinh(eta * w0 * tau))
+
+    kernel = sho_kernel_1 + sho_kernel_2
+
+    fig, ax = plt.subplots()
+    #acf_quarter = acf(lc_i['flux'] - np.mean(lc_i['flux']), nlags=499, missing='conservative')
+    #ax.scatter(cadence_offset, acf_quarter - np.mean(acf_quarter[10:20]))
+    plot_acf(notransits['flux'] - np.mean(notransits['flux']), lags=lags, use_vlines=False, ax=ax, missing='conservative')
+    ax.scatter(cadence_offset, kernel, color='black')
+    #ax.set_xlim(0,50)
+    #ax.set_ylim(0.1,1)
+
 
 
 def diagnostic_plots_refined(lc_final, param_lists, map_soln):
